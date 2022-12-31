@@ -1,0 +1,220 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+/**
+ * Auto-generated code below aims at helping you parse
+ * the standard input according to the problem statement.
+ **/
+
+struct Cell
+{
+    int y;
+    int x;
+    int scrap_amount;
+    int owner;
+    int units;
+    int recycler;
+    int can_build;
+    int can_spawn;
+    int in_range_of_recycler;
+};
+
+/*MAP INFORMATION*/
+
+
+/*ACTIONS*/
+void action_MOVE(int *amount_units, int *fromX, int *fromY, int *toX, int *toY);
+int action_SPAWN(int *robot_number, int *amount_units, int *robot_x, int *robot_y, int *my_matter);
+/*ACTIONS*/
+
+/*MAP INFORMATION*/
+void robots(struct Cell *battlefield, struct Cell *my_robot, struct Cell *opp_robot, struct Cell *my_free_cell, 
+int *total_case);
+int nb_cell(struct Cell *battlefield, int *total_case, int cell_owner);
+/*My robots*/
+
+int nb_robots(struct Cell *battlefield, int *total_case, int robot_owner);
+
+
+int main()
+{
+    int width;
+    int height;
+    scanf("%d%d", &width, &height);
+    
+    struct Cell my_robot[height*width];
+    struct Cell opp_robot[height*width];
+    struct Cell my_free_cell[height*width];
+
+    struct Cell battlefield[height*width];
+
+    // game loop
+    while (1) {
+
+        int total_case = 0;
+        int my_matter;
+        int opp_matter;
+        scanf("%d%d", &my_matter, &opp_matter);
+
+            for (int i = 0; i < height; i++) 
+            {
+                for (int j = 0; j < width; j++) 
+                {
+                    int x = j;
+                    int y = i;
+                    int scrap_amount;
+                    // 1 = me, 0 = foe, -1 = neutral
+                    int owner;
+                    int units;
+                    int recycler;
+                    int can_build;
+                    int can_spawn;
+                    int in_range_of_recycler;
+
+                    scanf("%d%d%d%d%d%d%d", &scrap_amount, &owner, &units, &recycler, &can_build, &can_spawn, &in_range_of_recycler);
+
+                    struct Cell cell_i;
+                    cell_i.y=j;
+                    cell_i.x=i;
+                    cell_i.scrap_amount=scrap_amount;
+                    cell_i.owner=owner;
+                    cell_i.units=units;
+                    cell_i.recycler=recycler;
+                    cell_i.can_build=can_build;
+                    cell_i.can_spawn=can_spawn;
+                    cell_i.in_range_of_recycler=in_range_of_recycler;
+
+                    battlefield[total_case] = cell_i;
+
+                    total_case++;
+                }
+            }
+
+///////////////////////IDENTIFY ELEMENTS ON MAP////////////////////////
+
+//Cell owner
+    robots(battlefield, my_robot, opp_robot, my_free_cell, &total_case);
+
+//My elements
+    int my_robot_number = nb_robots(battlefield, &total_case, 1);
+    int my_cell_count = nb_cell(battlefield, &total_case, 1);
+
+//Foe elements
+    int opp_robot_number = nb_robots(battlefield, &total_case, 0);
+    int opp_cell_count = nb_cell(battlefield, &total_case, 0);
+
+//Foe elements
+    int free_cell_count = nb_cell(battlefield, &total_case, -1);
+
+/////////////////////////ACTION//////////////////////////////
+
+
+    for(int robot_id = 0; robot_id < my_robot_number; robot_id++)
+    {
+        action_MOVE(&my_robot[robot_id].units, &my_robot[robot_id].y, &my_robot[robot_id].x, &opp_robot[robot_id].y,
+        &opp_robot[robot_id].x);
+    }
+
+    action_SPAWN(&my_robot_number, &my_robot[my_robot_number-1].units, &my_robot[0].y, &my_robot[0].x, &my_matter);
+
+
+    printf("\n");
+                    }//fin while
+}
+
+
+
+/////////////////////////////////////FONCTION//////////////////////////////////
+
+/*ACTIONS*/
+void action_MOVE(int *amount_units, int *fromX, int *fromY, int *toX, int *toY)
+{
+    char *action_MOVE = "MOVE";
+    printf("%s %d %d %d %d %d;", action_MOVE, *amount_units, *fromX, *fromY, *toX, *toY);
+}
+
+int action_SPAWN(int *robot_number, int *amount_units, int *robot_y, int *robot_x, int *my_matter)
+{
+    char *action_SPAWN = "SPAWN";
+    int spawn_new_robots = *my_matter / 10;
+
+    
+    if(*my_matter > 10 * *amount_units && *robot_number > 0)
+    {
+        printf("%s %d %d %d;", action_SPAWN, spawn_new_robots, *robot_y, *robot_x);
+    }
+    else if(*robot_number == 0)
+    {
+        fprintf(stderr, "%d", spawn_new_robots);
+        printf("%s %d %d %d;", action_SPAWN, spawn_new_robots, *robot_y, *robot_x);
+    }
+
+
+
+
+    return -1;
+}
+/*ACTIONS*/
+
+
+/*MAP INFORMATION*/
+
+void robots(struct Cell *battlefield, struct Cell *my_robot, struct Cell *opp_robot, struct Cell *my_free_cell, 
+int *total_case)
+{
+    int compteur_my_robot = 0;
+    int compteur_opp_robot = 0;
+    int compteur_my_free_cell = 0;
+
+    for(int i = 0; i < *total_case; i++)
+    {
+        if(battlefield[i].owner == 1 && battlefield[i].units > 0)
+        {
+            my_robot[compteur_my_robot] = battlefield[i];
+            compteur_my_robot++;
+        }
+    
+        if(battlefield[i].owner == 0 && battlefield[i].units > 0)
+        {
+            opp_robot[compteur_opp_robot] = battlefield[i];
+            compteur_opp_robot++;
+        }
+
+        if(battlefield[i].owner == 1 && battlefield[i].units == 0)
+        {
+            my_free_cell[compteur_my_free_cell] = battlefield[i];
+            compteur_my_free_cell++;
+        }
+    }
+}
+
+int nb_robots(struct Cell *battlefield, int *total_case, int robot_owner)
+{
+    int nb_robot = 0;
+
+    for(int i = 0; i < *total_case; i++)
+    {
+        if(battlefield[i].owner == robot_owner && battlefield[i].units > 0)
+        {
+            nb_robot++;
+        }
+    }
+    return nb_robot;
+}
+
+int nb_cell(struct Cell *battlefield, int *total_case, int cell_owner) //return the number of cells depending on owner
+{
+    int cell_counter = 0;
+
+    for(int i = 0; i < *total_case; i++)
+    {
+        if(battlefield[i].owner == cell_owner && battlefield[i].units == 0)
+        {
+            cell_counter++;
+        }
+    }
+    return cell_counter;
+}
+/*MAP INFORMATION*/
